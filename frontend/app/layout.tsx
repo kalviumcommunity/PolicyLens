@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,9 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PolicyLens",
   description: "Understand policy coverage and risk in one place.",
+  title: "PolicyLens | Grounded policy answers",
+  description: "PolicyLens surfaces policy-grounded answers, source context, and response quality signals.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
