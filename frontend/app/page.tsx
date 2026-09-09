@@ -19,6 +19,24 @@ const steps = [
   },
 ];
 
+const insights = [
+  {
+    label: "High-risk policies",
+    value: "12",
+    detail: "Items that need human review before the next release.",
+  },
+  {
+    label: "Fresh updates",
+    value: "4 today",
+    detail: "Recently changed policy docs ready to re-index.",
+  },
+  {
+    label: "Escalations prepared",
+    value: "Ready",
+    detail: "Cases with source context attached for support teams.",
+  },
+];
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] px-6 py-10 text-slate-950 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-50 sm:px-10 lg:px-16">
@@ -99,6 +117,35 @@ export default function Home() {
               <p className="mt-3 leading-7 text-slate-600 dark:text-slate-300">{step.description}</p>
             </div>
           ))}
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/75 sm:p-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Policy insights
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                A quick view of what needs attention.
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              This section gives reviewers a simple snapshot of policy health, updates, and support readiness.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {insights.map((insight) => (
+              <div
+                key={insight.label}
+                className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <p className="text-sm text-slate-500 dark:text-slate-400">{insight.label}</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight">{insight.value}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{insight.detail}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
     </main>
