@@ -178,6 +178,9 @@ export default function Home() {
               Search sources
             </span>
           </div>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Last synced a few minutes ago.
+          </p>
         </div>
 
         <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-950 px-6 py-5 text-white shadow-sm dark:border-slate-800 sm:flex-row sm:items-center">
