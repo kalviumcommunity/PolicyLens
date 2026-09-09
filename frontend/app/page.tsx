@@ -159,6 +159,9 @@ export default function Home() {
               Live sources
             </span>
           </div>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Updated just now for the current branch.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
               Return policy
@@ -170,16 +173,8 @@ export default function Home() {
               Product catalog
             </span>
           </div>
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Find a policy quickly with source name, keyword, or tag.
-            </p>
-            <span className="inline-flex w-fit rounded-full bg-slate-950 px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-slate-950">
-              Search sources
-            </span>
-          </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Last synced a few minutes ago.
+            3 active sources • 1 pending review • all sources searchable
           </p>
         </div>
 
