@@ -100,6 +100,55 @@ export default function Home() {
             </div>
           ))}
         </div>
+<<<<<<< Updated upstream
+=======
+
+        <div className="rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/75 sm:p-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Policy insights
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                A quick view of what needs attention.
+              </h2>
+            </div>
+            <p className="max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              This section gives reviewers a simple snapshot of policy health, updates, and support readiness.
+            </p>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {insights.map((insight) => (
+              <div
+                key={insight.label}
+                className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <p className="text-sm text-slate-500 dark:text-slate-400">{insight.label}</p>
+                <p className="mt-3 text-3xl font-semibold tracking-tight">{insight.value}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{insight.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-950 px-6 py-5 text-white shadow-sm dark:border-slate-800 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-300">
+              Next step
+            </p>
+            <p className="mt-2 text-lg font-semibold">
+              Add your first policy source or mock dataset.
+            </p>
+          </div>
+          <a
+            href="#policy-flow"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-100"
+          >
+            Review the flow
+          </a>
+        </div>
+>>>>>>> Stashed changes
       </section>
     </main>
   );
