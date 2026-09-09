@@ -148,6 +148,9 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+            Most recent update: return policy refreshed 2 hours ago.
+          </p>
         </div>
 
         <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/75">
