@@ -14,6 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  title: "PolicyLens",
+  description: "Understand policy coverage and risk in one place.",
   title: "PolicyLens | Grounded policy answers",
   description: "PolicyLens surfaces policy-grounded answers, source context, and response quality signals.",
 };
