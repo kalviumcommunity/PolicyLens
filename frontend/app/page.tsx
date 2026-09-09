@@ -100,8 +100,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-<<<<<<< Updated upstream
-=======
 
         <div className="rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/75 sm:p-8">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
