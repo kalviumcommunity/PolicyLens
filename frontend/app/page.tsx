@@ -117,7 +117,23 @@ export default function Home() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {insights.map((insight) => (
+            {[
+              {
+                label: "Coverage gaps",
+                value: "3",
+                detail: "High-impact policy areas still missing an indexed source.",
+              },
+              {
+                label: "Pending updates",
+                value: "2",
+                detail: "Draft changes waiting on reviewer confirmation.",
+              },
+              {
+                label: "Support readiness",
+                value: "Good",
+                detail: "Most answers have citations and clear escalation paths.",
+              },
+            ].map((insight) => (
               <div
                 key={insight.label}
                 className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
