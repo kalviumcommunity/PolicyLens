@@ -135,30 +135,16 @@ export default function Home() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-3">
-            {[
-              {
-                label: "Coverage gaps",
-                value: "3",
-                detail: "High-impact policy areas still missing an indexed source.",
-              },
-              {
-                label: "Pending updates",
-                value: "2",
-                detail: "Draft changes waiting on reviewer confirmation.",
-              },
-              {
-                label: "Support readiness",
-                value: "Good",
-                detail: "Most answers have citations and clear escalation paths.",
-              },
-            ].map((insight) => (
+            {insights.map((insight) => (
               <div
                 key={insight.label}
                 className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
               >
                 <p className="text-sm text-slate-500 dark:text-slate-400">{insight.label}</p>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">{insight.value}</p>
-                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">{insight.detail}</p>
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {insight.detail}
+                </p>
               </div>
             ))}
           </div>
