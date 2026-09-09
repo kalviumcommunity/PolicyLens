@@ -1,68 +1,54 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+
+import { getPolicies, type Policy } from "./api";
+
+function statusLabel(status: Policy["status"]) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 export default function Home() {
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    getPolicies()
+      .then(setPolicies)
+      .catch(() => setError("The PolicyLens API is not reachable. Start the backend on port 8000."))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="shell">
+      <header className="topbar">
+        <div className="brand"><span className="brand-mark">P</span><span>PolicyLens</span></div>
+        <span className="connection"><span className={`connection-dot ${error ? "offline" : ""}`} /> {error ? "API offline" : "Workspace connected"}</span>
+      </header>
+      <main className="content">
+        <section className="intro">
+          <div>
+            <p className="eyebrow">POLICY INTELLIGENCE</p>
+            <h1>See what your policies actually cover.</h1>
+            <p className="lede">Review policy health, spot gaps, and keep every decision grounded in the rules that shape your organization.</p>
+          </div>
+          <button className="primary-button" type="button">+ New policy</button>
+        </section>
+
+        <section className="metric-grid" aria-label="Policy summary">
+          <div className="metric"><span>Total policies</span><strong>{loading ? "--" : policies.length}</strong><small>Across your workspace</small></div>
+          <div className="metric"><span>Active coverage</span><strong>{loading ? "--" : policies.filter((policy) => policy.status === "active").length}</strong><small>Currently in effect</small></div>
+          <div className="metric accent"><span>Last review</span><strong>Today</strong><small>Keep your lens current</small></div>
+        </section>
+
+        <section className="policy-section">
+          <div className="section-heading"><div><p className="eyebrow">YOUR LIBRARY</p><h2>Policies</h2></div><button className="text-button" type="button">View all <span>{"->"}</span></button></div>
+          {error && <div className="alert">{error}</div>}
+          {loading && <div className="empty-state">Loading your policy library...</div>}
+          {!loading && !error && policies.length === 0 && <div className="empty-state"><strong>Your policy library is ready.</strong><span>Create your first policy to start analyzing coverage.</span></div>}
+          {!loading && !error && policies.length > 0 && <div className="policy-list">{policies.map((policy) => <article className="policy-row" key={policy.id}><div className="policy-icon">{policy.title.slice(0, 1).toUpperCase()}</div><div className="policy-copy"><h3>{policy.title}</h3><p>{policy.description || "No description yet."}</p></div><span className={`status status-${policy.status}`}>{statusLabel(policy.status)}</span><span className="version">v{policy.version}</span><span className="row-arrow">{"->"}</span></article>)}</div>}
+        </section>
       </main>
     </div>
   );
