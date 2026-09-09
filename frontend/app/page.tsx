@@ -19,6 +19,24 @@ const steps = [
   },
 ];
 
+const insights = [
+  {
+    label: "High-risk policies",
+    value: "12",
+    detail: "Items that need human review before the next release.",
+  },
+  {
+    label: "Fresh updates",
+    value: "4 today",
+    detail: "Recently changed policy docs ready to re-index.",
+  },
+  {
+    label: "Escalations prepared",
+    value: "Ready",
+    detail: "Cases with source context attached for support teams.",
+  },
+];
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] px-6 py-10 text-slate-950 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-50 sm:px-10 lg:px-16">
@@ -162,7 +180,6 @@ export default function Home() {
             Review the flow
           </a>
         </div>
->>>>>>> Stashed changes
       </section>
     </main>
   );
