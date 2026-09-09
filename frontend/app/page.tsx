@@ -159,6 +159,9 @@ export default function Home() {
               Live sources
             </span>
           </div>
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
+            Updated just now for the current branch.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
               Return policy
