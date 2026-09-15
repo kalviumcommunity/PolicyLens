@@ -185,6 +185,9 @@ export default function Home() {
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             3 active sources • 1 pending review • all sources searchable
           </p>
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            Ready for another small PR.
+          </p>
         </div>
 
         <div className="flex flex-col items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-950 px-6 py-5 text-white shadow-sm dark:border-slate-800 sm:flex-row sm:items-center">
