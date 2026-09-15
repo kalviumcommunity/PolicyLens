@@ -87,6 +87,9 @@ export default function Home() {
                 <p className="mt-1 text-slate-700 dark:text-slate-200">
                   Returns are allowed within 30 days for unopened items. Exceptions require seller approval.
                 </p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+                  Fresh preview on this branch
+                </p>
               </div>
             </div>
           </div>
