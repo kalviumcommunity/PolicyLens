@@ -37,6 +37,35 @@ const insights = [
   },
 ];
 
+type ReviewTone = "amber" | "red" | "emerald";
+
+const reviewToneStyles: Record<ReviewTone, string> = {
+  amber: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+  red: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+  emerald: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+};
+
+const reviewQueue = [
+  {
+    label: "Needs approval",
+    value: "1",
+    detail: "Seller agreement is waiting on a reviewer before publishing.",
+    tone: "amber" as ReviewTone,
+  },
+  {
+    label: "Blocked by source",
+    value: "2",
+    detail: "Two policy entries still need a source document attached.",
+    tone: "red" as ReviewTone,
+  },
+  {
+    label: "Ready to publish",
+    value: "8",
+    detail: "Reviewed policies can be pushed to the live answer flow.",
+    tone: "emerald" as ReviewTone,
+  },
+];
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] px-6 py-10 text-slate-950 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-50 sm:px-10 lg:px-16">
@@ -156,7 +185,47 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/75">
+        <div className="rounded-[2rem] border border-slate-200 bg-white/80 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950/75 sm:p-8">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                Review queue
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                Track what needs action before publishing.
+              </h2>
+            </div>
+            <a
+              href="#policy-sources"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-slate-300 px-5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
+            >
+              Review sources
+            </a>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {reviewQueue.map((item) => {
+              return (
+                <div
+                  key={item.label}
+                  className="rounded-3xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${reviewToneStyles[item.tone]}`}
+                  >
+                    {item.label}
+                  </span>
+                  <p className="mt-3 text-3xl font-semibold tracking-tight">{item.value}</p>
+                  <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {item.detail}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div id="policy-sources" className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/75">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
               Policy sources
