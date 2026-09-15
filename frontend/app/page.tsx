@@ -168,14 +168,8 @@ export default function Home() {
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             Updated just now for the current branch.
           </p>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Small branch-specific polish for the PR queue.
-          </p>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Another tiny PR-ready polish.
-          </p>
           <p className="mt-2 text-sm leading-6 text-emerald-700 dark:text-emerald-300">
-            Verified sources only show active policy documents that are ready for review.
+            Verified sources are limited to active policy documents ready for review.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
@@ -190,9 +184,6 @@ export default function Home() {
           </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             3 active sources • 1 pending review • all sources searchable
-          </p>
-          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Ready for another small PR.
           </p>
         </div>
 
