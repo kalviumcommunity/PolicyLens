@@ -64,3 +64,15 @@ class AnalysisRead(BaseModel):
     summary: str
     created_at: datetime
     findings: list[FindingRead] = Field(default_factory=list)
+
+
+class ReviewQueueItem(BaseModel):
+    policy_id: int
+    title: str
+    owner: str
+    status: PolicyStatus
+    latest_analysis_id: int | None = None
+    latest_analysis_at: datetime | None = None
+    finding_count: int = 0
+    high_priority_count: int = 0
+    highest_severity: FindingSeverity | None = None

@@ -2,13 +2,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select, text
-from sqlalchemy.orm import Session
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session, selectinload
 
 from .config import settings
 from .database import Base, engine, get_db
 from .models import Analysis, Finding, Policy, PolicyStatus
-from .schemas import AnalysisCreate, AnalysisRead, PolicyCreate, PolicyRead, PolicyUpdate
+from .schemas import AnalysisCreate, AnalysisRead, PolicyCreate, PolicyRead, PolicyUpdate, ReviewQueueItem
 
 
 @asynccontextmanager
@@ -104,3 +104,52 @@ def list_analyses(policy_id: int, db: Session = Depends(get_db)) -> list[Analysi
         raise HTTPException(status_code=404, detail="Policy not found")
     query = select(Analysis).where(Analysis.policy_id == policy_id).order_by(Analysis.created_at.desc())
     return list(db.scalars(query))
+
+
+@app.get("/api/review-queue", response_model=list[ReviewQueueItem])
+def review_queue(
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> list[ReviewQueueItem]:
+    policies = list(
+        db.scalars(
+            select(Policy)
+            .where(Policy.status != PolicyStatus.archived)
+            .options(selectinload(Policy.analyses).selectinload(Analysis.findings))
+        )
+    )
+    severity_rank = {
+        "critical": 4,
+        "high": 3,
+        "medium": 2,
+        "low": 1,
+    }
+    queue: list[ReviewQueueItem] = []
+    for policy in policies:
+        latest = max(policy.analyses, key=lambda analysis: analysis.created_at, default=None)
+        findings = latest.findings if latest else []
+        highest = max((finding.severity for finding in findings), key=lambda severity: severity_rank[severity], default=None)
+        queue.append(
+            ReviewQueueItem(
+                policy_id=policy.id,
+                title=policy.title,
+                owner=policy.owner,
+                status=policy.status,
+                latest_analysis_id=latest.id if latest else None,
+                latest_analysis_at=latest.created_at if latest else None,
+                finding_count=len(findings),
+                high_priority_count=sum(
+                    finding.severity in {"critical", "high"} for finding in findings
+                ),
+                highest_severity=highest,
+            )
+        )
+    queue.sort(
+        key=lambda item: (
+            severity_rank.get(item.highest_severity or "low", 0),
+            item.high_priority_count,
+            item.latest_analysis_at.timestamp() if item.latest_analysis_at else 0,
+        ),
+        reverse=True,
+    )
+    return queue[:limit]
