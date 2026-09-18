@@ -14,13 +14,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PolicyLens",
-  description: "Understand policy coverage and risk in one place.",
-  title: "PolicyLens | Grounded policy answers",
-  description: "PolicyLens surfaces policy-grounded answers, source context, and response quality signals.",
+  title: {
+    default: "PolicyLens | Grounded policy answers",
+    template: "%s | PolicyLens",
+  },
+  description:
+    "PolicyLens surfaces policy-grounded answers, source context, and response quality signals to help you understand policy coverage and risk in one place.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
   return (
     <html
       lang="en"
