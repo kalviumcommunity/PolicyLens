@@ -18,7 +18,7 @@ function UserAvatar() {
       aria-hidden
       className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-700 shadow-sm ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700"
     >
-      <svg viewBox="0 0 24 24" fill="none" className="h-4.5 w-4.5">
+      <svg viewBox="0 0 24 24" fill="none" className="h-[18px] w-[18px]">
         <path
           d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0"
           stroke="currentColor"
