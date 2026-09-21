@@ -1,12 +1,7 @@
 from contextlib import asynccontextmanager
-import logging
-from time import perf_counter
-from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 
@@ -14,8 +9,6 @@ from .config import settings
 from .database import Base, engine, get_db
 from .models import Analysis, Finding, Policy, PolicyStatus
 from .schemas import AnalysisCreate, AnalysisRead, PolicyCreate, PolicyRead, PolicyUpdate, ReviewQueueItem
-
-logger = logging.getLogger("policylens.api")
 
 
 @asynccontextmanager
@@ -32,27 +25,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.middleware("http")
-async def request_context(request: Request, call_next) -> Response:
-    request_id = request.headers.get("X-Request-ID")
-    if not request_id or len(request_id) > 128 or not request_id.isprintable():
-        request_id = str(uuid4())
-
-    started_at = perf_counter()
-    response = await call_next(request)
-    duration_ms = (perf_counter() - started_at) * 1000
-    response.headers["X-Request-ID"] = request_id
-    logger.info(
-        "%s %s %s %.2fms request_id=%s",
-        request.method,
-        request.url.path,
-        response.status_code,
-        duration_ms,
-        request_id,
-    )
-    return response
 
 
 @app.get("/health")
