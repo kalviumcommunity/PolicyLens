@@ -181,3 +181,100 @@ export async function mockSendQuery(question: string): Promise<ChatResponse> {
 
 export const CHAT_MOCK_NOTE =
   "Using temporary mock responses for UI development — replace with real POST /api/chat when backend RAG endpoint is available.";
+
+export type QueryTrend = "rising" | "stable" | "falling";
+
+export type QueryAnalytics = {
+  question: string;
+  count: number;
+  trend: QueryTrend;
+  trendDelta: number;
+  lastAsked: string;
+  avgConfidence: number;
+  category: "returns" | "refunds" | "replacements" | "seller" | "other";
+};
+
+const QUERY_ANALYTICS_MOCK: QueryAnalytics[] = [
+  {
+    question: "Can I return this item after 30 days?",
+    count: 142,
+    trend: "rising",
+    trendDelta: 23,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    avgConfidence: 0.94,
+    category: "returns",
+  },
+  {
+    question: "Is this product eligible for a refund?",
+    count: 98,
+    trend: "stable",
+    trendDelta: 2,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 34).toISOString(),
+    avgConfidence: 0.91,
+    category: "refunds",
+  },
+  {
+    question: "Does the seller allow replacement?",
+    count: 76,
+    trend: "rising",
+    trendDelta: 15,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    avgConfidence: 0.88,
+    category: "replacements",
+  },
+  {
+    question: "What is the return window for electronics?",
+    count: 61,
+    trend: "rising",
+    trendDelta: 11,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 58).toISOString(),
+    avgConfidence: 0.96,
+    category: "returns",
+  },
+  {
+    question: "Who pays for return shipping?",
+    count: 54,
+    trend: "falling",
+    trendDelta: -6,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    avgConfidence: 0.82,
+    category: "returns",
+  },
+  {
+    question: "Can I exchange an item I opened?",
+    count: 43,
+    trend: "stable",
+    trendDelta: 0,
+    lastAsked: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    avgConfidence: 0.68,
+    category: "replacements",
+  },
+];
+
+export async function getQueryAnalytics(): Promise<QueryAnalytics[]> {
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  return QUERY_ANALYTICS_MOCK.map((q) => ({
+    ...q,
+    count: q.count + Math.round(Math.random() * 5),
+    avgConfidence: Math.max(0.3, Math.min(0.99, q.avgConfidence + (Math.random() * 0.04 - 0.02))),
+  }));
+}
+
+export type QueryVolumeStats = {
+  total: number;
+  last24h: number;
+  last7d: number;
+  avgConfidence: number;
+  lowConfidenceCount: number;
+};
+
+export async function getQueryVolumeStats(): Promise<QueryVolumeStats> {
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  return {
+    total: 12847,
+    last24h: 412,
+    last7d: 2890,
+    avgConfidence: 0.89,
+    lowConfidenceCount: 38,
+  };
+}

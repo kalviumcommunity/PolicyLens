@@ -59,7 +59,7 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function LoadingScreen({ label = "Loading..." }: { label?: string }) {
   return (
-    <div className="flex min-h-[200 items-center justify-center py-16">
+    <div className="flex min-h-[200px] items-center justify-center py-16">
       <LoadingSpinner size="lg" label={label} />
     </div>
   );
