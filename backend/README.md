@@ -12,7 +12,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API is available at `http://localhost:8000`. Interactive docs are at `/docs`.
+The API is available at `http://localhost:8000`.Interactive docs are at `/docs`.
 
 Set `DATABASE_URL` and `FRONTEND_ORIGIN` in a `.env` file when deploying.
 
@@ -23,3 +23,4 @@ Set `DATABASE_URL` and `FRONTEND_ORIGIN` in a `.env` file when deploying.
 - `POST /api/policies` and `PATCH /api/policies/{policy_id}` manage policy records.
 - `POST /api/policies/{policy_id}/analyses` saves an analysis and its findings together.
 - `GET /api/policies/{policy_id}/analyses` returns the policy's analysis history.
+- `GET /api/review-queue?limit=20` prioritizes non-archived policies by latest finding severity.
