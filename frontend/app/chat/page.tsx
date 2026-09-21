@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { ChatResponse } from "@/app/api";
 import { sendQuery, ApiError } from "@/app/api";
 import { mockSendQuery, CHAT_MOCK_NOTE } from "@/lib/chat-mock";
@@ -88,8 +89,15 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const searchParams = useSearchParams();
+  const initialHandledRef = useRef(false);
 
   const useMock = useMemo(() => true, []);
+  const scopedPolicyId = useMemo(() => {
+    const p = searchParams.get("p");
+    const n = p ? Number(p) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  }, [searchParams]);
 
   const runQuery = useCallback(
     async (questionRaw: string) => {
@@ -169,6 +177,15 @@ export default function ChatPage() {
   );
 
   useEffect(() => {
+    if (initialHandledRef.current) return;
+    initialHandledRef.current = true;
+    const q = searchParams.get("q")?.trim();
+    if (q) {
+      queueMicrotask(() => void runQuery(q));
+    }
+  }, [searchParams, runQuery]);
+
+  useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
@@ -199,6 +216,11 @@ export default function ChatPage() {
               Sources attached
             </Badge>
             <Badge tone="info">3 indexed sources</Badge>
+            {scopedPolicyId !== undefined && (
+              <Badge tone="draft">
+                Scoped to policy #{scopedPolicyId}
+              </Badge>
+            )}
             {useMock && (
               <Badge tone="warning">
                 Demo mode — mock responses

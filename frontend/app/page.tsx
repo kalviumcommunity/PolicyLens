@@ -1,8 +1,5 @@
-const metrics = [
-  { label: "Policies indexed", value: "1,200+" },
-  { label: "Answer confidence", value: "98%" },
-  { label: "Avg. lookup time", value: "< 2s" },
-];
+import Link from "next/link";
+import { getPolicies, type Policy } from "@/app/api";
 
 const steps = [
   {
@@ -19,25 +16,64 @@ const steps = [
   },
 ];
 
-const insights = [
-  {
-    label: "High-risk policies",
-    value: "12",
-    detail: "Items that need human review before the next release.",
-  },
-  {
-    label: "Fresh updates",
-    value: "4 today",
-    detail: "Recently changed policy docs ready to re-index.",
-  },
-  {
-    label: "Escalations prepared",
-    value: "Ready",
-    detail: "Cases with source context attached for support teams.",
-  },
-];
+async function loadLivePolicyCounts() {
+  try {
+    const policies = await getPolicies({ limit: 500 });
+    const items = Array.isArray(policies) ? policies : [];
+    return {
+      ok: true as const,
+      total: items.length,
+      active: items.filter((p: Policy) => p.status === "active").length,
+      draft: items.filter((p: Policy) => p.status === "draft").length,
+      archived: items.filter((p: Policy) => p.status === "archived").length,
+    };
+  } catch {
+    return {
+      ok: false as const,
+      total: 0,
+      active: 0,
+      draft: 0,
+      archived: 0,
+    };
+  }
+}
 
-export default function Home() {
+export default async function Home() {
+  const live = await loadLivePolicyCounts();
+
+  const metrics = [
+    {
+      label: "Policies indexed",
+      value: live.total.toLocaleString(),
+    },
+    {
+      label: "Active policies",
+      value: live.active.toLocaleString(),
+    },
+    {
+      label: "Drafts in review",
+      value: live.draft.toLocaleString(),
+    },
+  ];
+
+  const insights = [
+    {
+      label: "Total policies",
+      value: live.total.toLocaleString(),
+      detail: "Documents loaded from the connected policy library.",
+    },
+    {
+      label: "Draft policies",
+      value: live.draft > 0 ? `${live.draft} pending` : "Up to date",
+      detail: "Recently changed policy docs ready to review or re-index.",
+    },
+    {
+      label: "Source context",
+      value: "Grounded",
+      detail: "Every answer is linked to a retrievable policy source.",
+    },
+  ];
+
   return (
     <main className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#ffffff_100%)] px-6 py-10 text-slate-950 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.22),_transparent_28%),linear-gradient(180deg,_#020617_0%,_#0f172a_100%)] dark:text-slate-50 sm:px-10 lg:px-16">
       <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center gap-10 lg:gap-14">
@@ -56,18 +92,18 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#policy-flow"
+              <Link
+                href="/chat"
                 className="inline-flex h-12 items-center justify-center rounded-full bg-slate-950 px-6 text-sm font-medium text-white transition-colors hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
               >
-                Explore the flow
-              </a>
-              <a
-                href="#metrics"
+                Ask PolicyLens
+              </Link>
+              <Link
+                href="/dashboard"
                 className="inline-flex h-12 items-center justify-center rounded-full border border-slate-300 px-6 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
               >
-                View signal metrics
-              </a>
+                View Dashboard
+              </Link>
             </div>
           </div>
 
@@ -103,6 +139,11 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <p className="-mt-6 text-xs text-slate-500 dark:text-slate-400">
+          {live.ok
+            ? `Live counts from the policy library (${live.archived} archived).`
+            : "Waiting on backend connection — showing zeros. Start the backend to see live counts."}
+        </p>
 
         <div id="policy-flow" className="grid gap-4 lg:grid-cols-3">
           {steps.map((step, index) => (
@@ -149,7 +190,11 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
-            Most recent update: return policy refreshed 2 hours ago.
+            {live.ok
+              ? live.total > 0
+                ? `Library connected. Use the dashboard to review per-policy analysis and findings.`
+                : "No policies yet. Add a policy source to start tracking."
+              : "Backend not reachable. Start the backend to see live policy updates."}
           </p>
         </div>
 
@@ -163,7 +208,7 @@ export default function Home() {
             </span>
           </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            Updated just now for the current branch.
+            {live.ok ? "Connected to the policy library." : "Waiting on backend connection."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
@@ -177,7 +222,9 @@ export default function Home() {
             </span>
           </div>
           <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
-            3 active sources • 1 pending review • all sources searchable
+            {live.ok
+              ? `${live.total.toLocaleString()} active policy documents • ${live.draft} draft • all sources searchable`
+              : "3 source categories • start the backend to see live counts"}
           </p>
         </div>
 
@@ -187,15 +234,15 @@ export default function Home() {
               Next step
             </p>
             <p className="mt-2 text-lg font-semibold">
-              Add your first policy source or mock dataset.
+              Browse the policy library or ask a grounded question.
             </p>
           </div>
-          <a
-            href="#policy-flow"
+          <Link
+            href="/policies"
             className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-100"
           >
-            Review the flow
-          </a>
+            Browse the policy library
+          </Link>
         </div>
       </section>
     </main>
