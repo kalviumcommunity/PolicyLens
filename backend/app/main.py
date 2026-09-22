@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
@@ -28,10 +28,11 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health(db: Session = Depends(get_db)) -> dict[str, str]:
+def health(response: Response, db: Session = Depends(get_db)) -> dict[str, str]:
     try:
         db.execute(text("SELECT 1"))
     except Exception:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "degraded", "service": "policylens-api"}
     return {"status": "ok", "service": "policylens-api"}
 
