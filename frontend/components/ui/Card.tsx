@@ -1,5 +1,6 @@
 import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import { forwardRef } from "react";
+import Image from "next/image";
 
 function cn(...classes: (string | boolean | undefined | null)[]) {
   return classes.filter(Boolean).join(" ");
@@ -153,17 +154,22 @@ CardBadge.displayName = "CardBadge";
 export const CardImage = forwardRef<
   HTMLImageElement,
   React.ImgHTMLAttributes<HTMLImageElement>
->(({ src, alt = "", className, ...rest }, ref) => (
-  <div className={cn("relative aspect-video w-full overflow-hidden", className)}>
-    <img
-      ref={ref}
-      src={src}
-      alt={alt}
-      className="h-full w-full object-cover"
-      {...rest}
-    />
-  </div>
-));
+>(({ src, alt = "", className, ...rest }, ref) => {
+  const imageProps = {
+    ...rest,
+    ref: ref as React.RefObject<HTMLImageElement>,
+    src,
+    alt,
+    fill: true,
+    sizes: "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw",
+    className: "h-full w-full object-cover",
+  } as React.ComponentProps<typeof Image>;
+  return (
+    <div className={cn("relative aspect-video w-full overflow-hidden", className)}>
+      <Image {...imageProps} />
+    </div>
+  );
+});
 CardImage.displayName = "CardImage";
 
 export const CardDivider = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
