@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { ChatResponse } from "@/app/api";
@@ -11,6 +11,7 @@ import { Card, CardBody } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Alert } from "@/components/ui/Alert";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChatMessage, type ChatMessageData } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 
@@ -84,7 +85,7 @@ function WelcomeCard({ onPick }: { onPick: (q: string) => void }) {
   );
 }
 
-export default function ChatPage() {
+function ChatPageInner() {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -129,10 +130,10 @@ export default function ChatPage() {
       try {
         let chat: ChatResponse;
         try {
-          chat = await sendQuery(question);
+          chat = await sendQuery(question, { policy_id: scopedPolicyId });
         } catch (e) {
           if (e instanceof ApiError && e.status === 501 && useMock) {
-            chat = await mockSendQuery(question);
+            chat = await mockSendQuery(question, scopedPolicyId);
           } else {
             throw e;
           }
@@ -173,7 +174,7 @@ export default function ChatPage() {
         setLoading(false);
       }
     },
-    [loading, useMock]
+    [loading, useMock, scopedPolicyId]
   );
 
   useEffect(() => {
@@ -298,5 +299,21 @@ export default function ChatPage() {
         </div>
       </div>
     </PageShell>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <PageShell maxWidth="4xl" className="py-6 sm:py-8">
+          <div className="min-h-[62vh] flex items-center justify-center">
+            <LoadingSpinner size="lg" label="Loading chat…" />
+          </div>
+        </PageShell>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
   );
 }

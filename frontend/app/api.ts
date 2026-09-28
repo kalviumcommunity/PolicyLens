@@ -166,12 +166,17 @@ export async function createAnalysis(
   });
 }
 
-export async function sendQuery(question: string): Promise<ChatResponse> {
+export type ChatQueryOptions = {
+  policy_id?: number;
+};
+
+export async function sendQuery(question: string, options: ChatQueryOptions = {}): Promise<ChatResponse> {
   void question;
+  void options;
   throw new ApiError(
     "POST /api/chat endpoint is not yet implemented in the backend. " +
       "A temporary mock response is being used for UI development. " +
-      "Swap this implementation to request('/api/chat', { method: 'POST', body: JSON.stringify({ question }) }) " +
+      "Swap this implementation to request('/api/chat', { method: 'POST', body: JSON.stringify({ question, ...options }) }) " +
       "once the backend RAG/chat endpoint is available.",
     501
   );

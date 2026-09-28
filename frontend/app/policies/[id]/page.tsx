@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Policy, Analysis, Finding } from "@/app/api";
 import { getPolicy, getAnalyses, ApiError } from "@/app/api";
 import { PageShell, PageHeader } from "@/components/PageShell";
@@ -128,6 +129,7 @@ export default function PolicyDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const [policyId, setPolicyId] = useState<number | null>(null);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [analyses, setAnalyses] = useState<Analysis[] | null>(null);
@@ -177,7 +179,13 @@ export default function PolicyDetailPage({
   }, [policyId]);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   const findingsBreakdown = useMemo(() => {
@@ -213,9 +221,7 @@ export default function PolicyDetailPage({
           description="This policy ID does not exist or was removed. Try another ID or browse the full policy library."
           actionLabel="Browse policies"
           onAction={() => {
-            if (typeof window !== "undefined") {
-              window.location.href = "/policies";
-            }
+            router.push("/policies");
           }}
         />
       </PageShell>

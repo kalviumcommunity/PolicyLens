@@ -8,7 +8,7 @@ import { PageShell, PageHeader } from "@/components/PageShell";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { LoadingScreen, Skeleton } from "@/components/ui/LoadingSpinner";
+import { Skeleton } from "@/components/ui/LoadingSpinner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
