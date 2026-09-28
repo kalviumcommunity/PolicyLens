@@ -107,7 +107,7 @@ export default function DashboardPage() {
           try {
             const list = await getAnalyses(policy.id);
             return list.map((a) => ({ ...a, policy }));
-          } catch (_e) {
+          } catch {
             return [] as EnrichedAnalysis[];
           }
         })
@@ -134,7 +134,13 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void load();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [load]);
 
   const stats = useMemo(() => {
