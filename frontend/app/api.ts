@@ -182,6 +182,92 @@ export async function sendQuery(question: string, options: ChatQueryOptions = {}
   );
 }
 
+export type User = {
+  id: number;
+  email: string;
+  full_name?: string;
+  created_at: string;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type SignupRequest = {
+  email: string;
+  password: string;
+  full_name?: string;
+};
+
+export type AuthResponse = {
+  access_token: string;
+  token_type: "bearer";
+  user: User;
+};
+
+export async function login(payload: LoginRequest): Promise<AuthResponse> {
+  void payload;
+  throw new ApiError(
+    "POST /api/auth/login endpoint is not yet implemented in the backend. " +
+      "A temporary mock flow is being used for UI development. " +
+      "Swap this implementation to request('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }) " +
+      "once the backend auth endpoint is available.",
+    501
+  );
+}
+
+export async function signup(payload: SignupRequest): Promise<AuthResponse> {
+  void payload;
+  throw new ApiError(
+    "POST /api/auth/signup endpoint is not yet implemented in the backend. " +
+      "A temporary mock flow is being used for UI development. " +
+      "Swap this implementation to request('/api/auth/signup', { method: 'POST', body: JSON.stringify(payload) }) " +
+      "once the backend auth endpoint is available.",
+    501
+  );
+}
+
+export async function mockLogin(payload: LoginRequest): Promise<AuthResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 900 + Math.random() * 600));
+  if (!payload.email.includes("@")) {
+    throw new ApiError("Please enter a valid email address.", 400);
+  }
+  if (payload.password.length < 6) {
+    throw new ApiError("Password must be at least 6 characters.", 400);
+  }
+  return {
+    access_token: "mock-token-" + Date.now().toString(36),
+    token_type: "bearer",
+    user: {
+      id: 1,
+      email: payload.email,
+      full_name: payload.email.split("@")[0],
+      created_at: new Date().toISOString(),
+    },
+  };
+}
+
+export async function mockSignup(payload: SignupRequest): Promise<AuthResponse> {
+  await new Promise((resolve) => setTimeout(resolve, 900 + Math.random() * 600));
+  if (!payload.email.includes("@")) {
+    throw new ApiError("Please enter a valid email address.", 400);
+  }
+  if (payload.password.length < 6) {
+    throw new ApiError("Password must be at least 6 characters.", 400);
+  }
+  return {
+    access_token: "mock-token-" + Date.now().toString(36),
+    token_type: "bearer",
+    user: {
+      id: 1,
+      email: payload.email,
+      full_name: payload.full_name ?? payload.email.split("@")[0],
+      created_at: new Date().toISOString(),
+    },
+  };
+}
+
 export function getApiBaseUrl(): string {
   return apiUrl;
 }
