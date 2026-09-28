@@ -164,18 +164,36 @@ function pickBest(question: string): ChatResponse {
   return GENERIC;
 }
 
-export async function mockSendQuery(question: string): Promise<ChatResponse> {
+export async function mockSendQuery(question: string, scopedPolicyId?: number): Promise<ChatResponse> {
   await new Promise((resolve) => setTimeout(resolve, 900 + Math.random() * 900));
   if (Math.random() < 0.02) {
     throw new Error("Simulated transient failure");
   }
   const base = pickBest(question);
+  const confidence = Math.max(
+    0.3,
+    Math.min(0.99, base.confidence + (Math.random() * 0.08 - 0.04))
+  );
+
+  if (scopedPolicyId !== undefined) {
+    const scopedSources = (base.sources ?? []).map((s, idx) => ({
+      ...s,
+      policy_id: idx === 0 ? scopedPolicyId : s.policy_id,
+    }));
+    const scopedRelated = base.related_policy_ids
+      ? [scopedPolicyId, ...base.related_policy_ids.filter((id) => id !== scopedPolicyId)]
+      : [scopedPolicyId];
+    return {
+      ...base,
+      confidence,
+      sources: scopedSources,
+      related_policy_ids: scopedRelated,
+    };
+  }
+
   return {
     ...base,
-    confidence: Math.max(
-      0.3,
-      Math.min(0.99, base.confidence + (Math.random() * 0.08 - 0.04))
-    ),
+    confidence,
   };
 }
 
