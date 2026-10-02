@@ -1,6 +1,6 @@
 # PolicyLens backend
 
-FastAPI API with SQLite persistence.
+FastAPI API with SQLite persistence
 
 ## Run locally
 
