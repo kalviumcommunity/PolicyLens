@@ -21,6 +21,6 @@ Set `DATABASE_URL` and `FRONTEND_ORIGIN` in a `.env` file when deploying.
 - `GET /health` checks API and database availability, returning `503` when the database is unavailable.
 - `GET /api/policies?status=active&search=privacy&limit=20&offset=0` filters and paginates policies.
 - `POST /api/policies` and `PATCH /api/policies/{policy_id}` manage policy records.
-- `POST /api/policies/{policy_id}/analyses` saves an analysis and its findings together
+- `POST /api/policies/{policy_id}/analyses` saves an analysis and its findings together.
 - `GET /api/policies/{policy_id}/analyses` returns the policy's analysis history.
 - `GET /api/review-queue?limit=20` prioritizes non-archived policies by latest finding severity.
