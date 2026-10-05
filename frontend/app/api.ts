@@ -86,6 +86,18 @@ export type ChatResponse = {
   related_policy_ids?: number[];
 };
 
+export type ReviewQueueItem = {
+  policy_id: number;
+  title: string;
+  owner: string;
+  status: PolicyStatus;
+  latest_analysis_id: number | null;
+  latest_analysis_at: string | null;
+  finding_count: number;
+  high_priority_count: number;
+  highest_severity: FindingSeverity | null;
+};
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
@@ -154,6 +166,12 @@ export async function updatePolicy(policyId: number, payload: PolicyUpdate): Pro
 
 export async function getAnalyses(policyId: number): Promise<Analysis[]> {
   return request<Analysis[]>(`/api/policies/${policyId}/analyses`);
+}
+
+export async function getReviewQueue(params: { limit?: number } = {}): Promise<ReviewQueueItem[]> {
+  return request<ReviewQueueItem[]>(`/api/review-queue${buildQuery({
+    limit: params.limit,
+  })}`);
 }
 
 export async function createAnalysis(

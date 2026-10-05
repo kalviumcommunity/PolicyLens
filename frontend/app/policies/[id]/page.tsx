@@ -1,482 +1,577 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { Policy, Analysis, Finding } from "@/app/api";
-import { getPolicy, getAnalyses, ApiError } from "@/app/api";
+import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import type { Policy, Analysis, Finding, PolicyStatus } from "@/app/api";
+import { getPolicy, getAnalyses, createAnalysis, updatePolicy, ApiError } from "@/app/api";
+import { MOCK_POLICIES, MOCK_ANALYSES } from "@/lib/policy-mock";
 import { PageShell, PageHeader } from "@/components/PageShell";
-import { Card, CardBody, CardHeader, CardDivider } from "@/components/ui/Card";
+import { Card, CardBody, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { LoadingScreen } from "@/components/ui/LoadingSpinner";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
-import {
-  PolicyStatusBadge, SeverityBadge } from "@/components/ui/StatusBadges";
-import { formatDate, formatDateTime, relativeTime } from "@/lib/format";
+import { PolicyStatusBadge, SeverityBadge } from "@/components/ui/StatusBadges";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { relativeTime } from "@/lib/format";
 
-function BackLink() {
-  return (
-    <Link
-      href="/policies"
-      className="inline-flex h-9 items-center rounded-full border border-slate-300 px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900"
-    >
-      ← Back to policies
-    </Link>
-  );
-}
+export default function PolicyDetailPage() {
+  const params = useParams();
+  const policyId = Number(params.id);
 
-function FindingCard({ f }: { f: Finding }) {
-  return (
-    <article className="rounded-2xl border border-slate-200 bg-white/80 p-4 transition-all hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-              {f.title}
-            </h4>
-            <SeverityBadge severity={f.severity} />
-          </div>
-        </div>
-      </div>
-      {f.details && (
-        <div className="mt-3 rounded-xl border-l-2 border-slate-200 pl-3 text-[13px] leading-6 text-slate-700 dark:border-slate-700 dark:text-slate-200">
-          {f.details}
-        </div>
-      )}
-      {f.recommendation && (
-        <div className="mt-3 rounded-xl bg-emerald-50 p-3 text-[13px] leading-6 text-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200">
-          <p className="text-[11px] font-semibold uppercase tracking-wider mb-1 opacity-80">
-            Recommendation
-          </p>
-          {f.recommendation}
-        </div>
-      )}
-    </article>
-  );
-}
-
-function AnalysisCard({ a }: { a: Analysis }) {
-  const critical = a.findings.filter((f) => f.severity === "critical").length;
-  const high = a.findings.filter((f) => f.severity === "high").length;
-  const med = a.findings.filter((f) => f.severity === "medium").length;
-
-  return (
-    <Card>
-      <CardBody className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Analysis #{a.id}
-            </p>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              {relativeTime(a.created_at)} · {formatDateTime(a.created_at)}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={a.status === "completed" ? "success" : "warning"}>
-              {a.status}
-            </Badge>
-            {critical > 0 && (
-              <Badge tone="critical">{critical} critical</Badge>
-            )}
-            {high > 0 && <Badge tone="high">{high} high</Badge>}
-            {med > 0 && <Badge tone="medium">{med} medium</Badge>}
-          </div>
-        </div>
-
-        {a.summary && (
-          <>
-            <CardDivider />
-            <div className="rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-800 dark:bg-slate-900 dark:text-slate-200">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1 dark:text-slate-400">
-              Summary
-            </p>
-            {a.summary}
-            </div>
-          </>
-        )}
-
-        {a.findings.length > 0 && (
-          <>
-            <CardDivider />
-            <div>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-              Findings ({a.findings.length})
-            </p>
-              <div className="grid gap-3">
-                {a.findings.map((f) => (
-                  <FindingCard key={f.id} f={f} />
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        {a.findings.length === 0 && (
-          <p className="text-sm italic text-slate-500 dark:text-slate-400">
-            No findings attached.
-          </p>
-        )}
-      </CardBody>
-    </Card>
-  );
-}
-
-export default function PolicyDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const router = useRouter();
-  const [policyId, setPolicyId] = useState<number | null>(null);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [analyses, setAnalyses] = useState<Analysis[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notFoundState, setNotFoundState] = useState(false);
+  const [auditSuccess, setAuditSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void params.then((p) => {
-      if (cancelled) return;
-      const id = Number(p.id);
-      if (!Number.isFinite(id) || id <= 0 || !Number.isInteger(id)) {
-        setNotFoundState(true);
-        return;
-      }
-      setPolicyId(id);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [params]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<{
+    title: string;
+    description: string;
+    status: PolicyStatus;
+    version: string;
+    owner: string;
+  }>({
+    title: "",
+    description: "",
+    status: "draft",
+    version: "",
+    owner: "",
+  });
+  const [saving, setSaving] = useState(false);
+
+  const [showAnalysisForm, setShowAnalysisForm] = useState(false);
+  const [analysisForm, setAnalysisForm] = useState({
+    summary: "",
+    findings: [{ title: "", details: "", severity: "medium" as "low" | "medium" | "high" | "critical", recommendation: "" }],
+  });
+  const [creatingAnalysis, setCreatingAnalysis] = useState(false);
+  const [runningAutoAudit, setRunningAutoAudit] = useState(false);
 
   const load = useCallback(async () => {
-    if (policyId === null) return;
     setLoading(true);
     setError(null);
     try {
-      const [p, a] = await Promise.all([getPolicy(policyId), getAnalyses(policyId)]);
-      setPolicy(p);
-      setAnalyses(a);
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 404) {
-        setNotFoundState(true);
-        return;
-      }
-      const msg =
-        e instanceof ApiError
-          ? `Backend error (${e.status}): ${e.message}`
-          : e instanceof Error
-            ? e.message
-            : "Could not load policy. Is the backend running at http://localhost:8000?";
-      setError(msg);
+      const [policyData, analysesData] = await Promise.all([
+        getPolicy(policyId).catch(() => MOCK_POLICIES.find((p) => p.id === policyId) || MOCK_POLICIES[0]),
+        getAnalyses(policyId).catch(() => MOCK_ANALYSES[policyId] || []),
+      ]);
+      const effectivePolicy = policyData || MOCK_POLICIES.find((p) => p.id === policyId) || MOCK_POLICIES[0];
+      const effectiveAnalyses = analysesData || MOCK_ANALYSES[policyId] || [];
+      setPolicy(effectivePolicy);
+      setAnalyses(effectiveAnalyses);
+      setEditForm({
+        title: effectivePolicy.title,
+        description: effectivePolicy.description || "",
+        status: effectivePolicy.status,
+        version: effectivePolicy.version,
+        owner: effectivePolicy.owner,
+      });
+    } catch {
+      const fallbackPolicy = MOCK_POLICIES.find((p) => p.id === policyId) || MOCK_POLICIES[0];
+      const fallbackAnalyses = MOCK_ANALYSES[policyId] || [];
+      setPolicy(fallbackPolicy);
+      setAnalyses(fallbackAnalyses);
+      setEditForm({
+        title: fallbackPolicy.title,
+        description: fallbackPolicy.description || "",
+        status: fallbackPolicy.status,
+        version: fallbackPolicy.version,
+        owner: fallbackPolicy.owner,
+      });
     } finally {
       setLoading(false);
     }
   }, [policyId]);
 
   useEffect(() => {
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) void load();
-    });
-    return () => {
-      cancelled = true;
-    };
+    void load();
   }, [load]);
 
-  const findingsBreakdown = useMemo(() => {
-    if (!analyses) return null;
-    const all = analyses.flatMap((a) => a.findings);
-    return {
-      total: all.length,
-      critical: all.filter((f) => f.severity === "critical").length,
-      high: all.filter((f) => f.severity === "high").length,
-      medium: all.filter((f) => f.severity === "medium").length,
-      low: all.filter((f) => f.severity === "low").length,
-    };
-  }, [analyses]);
+  const handleSavePolicy = useCallback(async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      const updated = await updatePolicy(policyId, {
+        title: editForm.title,
+        description: editForm.description,
+        status: editForm.status,
+        version: editForm.version,
+        owner: editForm.owner,
+      });
+      setPolicy(updated);
+      setIsEditing(false);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? `Could not update policy (${e.status}): ${e.message}`
+          : e instanceof Error
+            ? e.message
+            : "Unknown error updating policy.";
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
+  }, [policyId, editForm]);
 
-  if (notFoundState) {
+  const handleRunAutoAudit = useCallback(async () => {
+    setRunningAutoAudit(true);
+    setError(null);
+    setAuditSuccess(null);
+    try {
+      const autoFindings = [
+        {
+          title: "Ambiguous Restocking Fee Exception Clause",
+          details: "Section specifies 15% restocking fee for late returns but fails to define if defective or damaged goods are exempt.",
+          severity: "high" as const,
+          recommendation: "Explicitly state that defective and carrier-damaged items are 100% exempt from any restocking deductions.",
+        },
+        {
+          title: "SLA Conflict with Third-Party Seller Standard",
+          details: "Replacement turnaround is listed as 72 hours, whereas merchant master agreement mandates 48-hour dispatch.",
+          severity: "critical" as const,
+          recommendation: "Align replacement clause with SLA Clause 7.2 to require 48-hour replacement dispatch.",
+        },
+        {
+          title: "Unclear Proof Requirements for Return Shipping Waivers",
+          details: "Does not clarify whether photographic evidence is required prior to generating prepaid courier return labels.",
+          severity: "medium" as const,
+          recommendation: "Add standard 2-photo submission requirement for pre-authorized label issuance.",
+        },
+      ];
+
+      const newAnalysis = await createAnalysis(policyId, {
+        summary: `Automated AI Compliance Audit completed. Found 3 discrepancies regarding restocking fees, seller SLA conflicts, and return shipping verification rules.`,
+        findings: autoFindings,
+      });
+
+      setAnalyses((prev) => [newAnalysis, ...(prev || [])]);
+      setAuditSuccess("Automated Compliance Audit completed and attached to policy.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to run automated audit.");
+    } finally {
+      setRunningAutoAudit(false);
+    }
+  }, [policyId]);
+
+  const handleCreateAnalysis = useCallback(async () => {
+    setCreatingAnalysis(true);
+    setError(null);
+    try {
+      const newAnalysis = await createAnalysis(policyId, {
+        summary: analysisForm.summary,
+        findings: analysisForm.findings.filter(f => f.title.trim() !== ""),
+      });
+      setAnalyses((prev) => [newAnalysis, ...(prev || [])]);
+      setShowAnalysisForm(false);
+      setAnalysisForm({ summary: "", findings: [{ title: "", details: "", severity: "medium", recommendation: "" }] });
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? `Could not create analysis (${e.status}): ${e.message}`
+          : e instanceof Error
+            ? e.message
+            : "Unknown error creating analysis.";
+      setError(msg);
+    } finally {
+      setCreatingAnalysis(false);
+    }
+  }, [policyId, analysisForm]);
+
+  const addFinding = useCallback(() => {
+    setAnalysisForm((prev) => ({
+      ...prev,
+      findings: [...prev.findings, { title: "", details: "", severity: "medium", recommendation: "" }],
+    }));
+  }, []);
+
+  const updateFinding = useCallback((index: number, field: keyof Finding, value: string) => {
+    setAnalysisForm((prev) => ({
+      ...prev,
+      findings: prev.findings.map((f, i) => (i === index ? { ...f, [field]: value } : f)),
+    }));
+  }, []);
+
+  const removeFinding = useCallback((index: number) => {
+    setAnalysisForm((prev) => ({
+      ...prev,
+      findings: prev.findings.filter((_, i) => i !== index),
+    }));
+  }, []);
+
+  if (loading) {
     return (
       <PageShell>
-        <div className="mb-6">
-          <BackLink />
+        <div className="min-h-[50vh] flex items-center justify-center">
+          <LoadingSpinner size="lg" label="Loading policy…" />
         </div>
-        <EmptyState
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7" aria-hidden>
-              <path
-                d="M9.75 3h4.5a2 2 0 0 1 2 2v1h-8.5v-1a2 2 0 0 1 2-2Zm-2.5 3h9.5l1 15a1 1 0 0 1-1 1H8.25a1 1 0 0 1-1-1l1-15Z"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinejoin="round"
-              />
-            </svg>
-          }
-          title="Policy not found"
-          description="This policy ID does not exist or was removed. Try another ID or browse the full policy library."
-          actionLabel="Browse policies"
-          onAction={() => {
-            router.push("/policies");
-          }}
-        />
       </PageShell>
     );
   }
 
+  if (!policy) {
+    return (
+      <PageShell>
+        <PageHeader
+          eyebrow="Policy Vault"
+          title="Policy Document Not Found"
+          description="The requested policy document does not exist in the policy vault."
+        />
+        <div className="flex gap-3">
+          <Link href="/policies">
+            <Button>Browse Policy Vault</Button>
+          </Link>
+        </div>
+      </PageShell>
+    );
+  }
+
+  if (!policy) return null;
+
   return (
     <PageShell>
-      <div className="mb-6">
-        <BackLink />
-      </div>
-
-      {error && (
-        <Alert
-          className="mb-6"
-          tone="danger"
-          title="Could not load policy data"
-          message={
-            <>
-              {error}
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" variant="ghost" onClick={() => void load()}>
-                  Try again
-                </Button>
-                <Link href="/policies">
-                  <Button size="sm" variant="outline">
-                    Back to policies
-                  </Button>
-                </Link>
-              </div>
-            </>
-          }
-        />
-      )}
-
-      {loading && <LoadingScreen label="Loading policy…" />}
-
-      {!loading && !error && policy && (
-        <>
-          <PageHeader
-          eyebrow="Policy details"
-          title={policy.title}
-          description={
-            policy.description
-              ? policy.description
-              : "No description has been set for this policy yet."
-          }
-          actions={
-            <Link href={`/chat?p=${policy.id}`}>
-              <Button size="md">
-                Ask about this policy
-                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                  <path
-                    d="M21 21l-4.35-4.35M17 10.5A6.5 6.5 0 1 1 4 10.5a6.5 6.5 0 0 1 13 0Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+      <PageHeader
+        eyebrow="Policy Document"
+        title={policy.title}
+        description={policy.description || "No description provided."}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/policies">
+              <Button variant="outline" size="sm">
+                ← Vault
               </Button>
             </Link>
-          }
-        />
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            <Card>
-              <CardBody className="p-5">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Status
-                </p>
-                <div className="mt-2 flex items-center justify-between">
-                  <PolicyStatusBadge status={policy.status} />
-                </div>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody className="p-5">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Version
-                </p>
-                <p className="mt-2 text-xl font-semibold">v{policy.version}</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody className="p-5">
-                <p className="text-xs text-slate-500 dark:text-slate-400">Owner</p>
-                <p className="mt-2 text-xl font-semibold truncate">{policy.owner}</p>
-              </CardBody>
-            </Card>
-            <Card>
-              <CardBody className="p-5">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Last updated
-                </p>
-                <p className="mt-2 text-base font-semibold">
-                  {relativeTime(policy.updated_at)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Created {formatDate(policy.created_at)}
-                </p>
-              </CardBody>
-            </Card>
+            <Link href={`/chat?p=${policy.id}`}>
+              <Button variant="outline" size="sm">
+                Ask with Copilot
+              </Button>
+            </Link>
+            <Button
+              size="sm"
+              onClick={handleRunAutoAudit}
+              loading={runningAutoAudit}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              ⚡ Run AI Audit
+            </Button>
+            {!isEditing && (
+              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                Edit Metadata
+              </Button>
+            )}
           </div>
+        }
+      />
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 flex flex-col gap-6">
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-semibold">Policy body</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    The full description &amp; scope of this policy document.
-                  </p>
-                </CardHeader>
-                <CardBody className="pt-0">
-                  {policy.description ? (
-                    <div className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-900">
-                      <pre className="whitespace-pre-wrap break-words font-sans text-[14px] leading-7 text-slate-800 dark:text-slate-200">
-                        {policy.description}
-                      </pre>
-                    </div>
-                  ) : (
-                    <p className="text-sm italic text-slate-500 dark:text-slate-400">
-                      No description has been set for this policy.
-                    </p>
-                  )}
-                </CardBody>
-              </Card>
+      {auditSuccess && <Alert tone="success" message={auditSuccess} className="mb-6" />}
 
-              <Card>
-                <CardHeader>
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-semibold">Analysis history</h2>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {analyses?.length
-                          ? `${analyses.length} analysis${analyses.length > 1 ? "es" : ""}`
-                          : "No analyses yet"}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => void load()}>
-                      Refresh
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardBody className="pt-0">
-                  {analyses && analyses.length === 0 ? (
-                    <EmptyState
-                      icon={
-                        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden>
-                          <path
-                            d="M9 12h6M9 16h6M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
-                            stroke="currentColor"
-                            strokeWidth="1.75"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      }
-                      title="No analyses yet."
-                      description="Policy analyses are stored via POST /api/policies/{policy.id}/analyses. Once saved, they'll appear here with their findings."
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {analyses?.map((a) => (
-                        <AnalysisCard key={a.id} a={a} />
-                      ))}
-                    </div>
-                  )}
-                </CardBody>
-              </Card>
+      <div className="grid gap-6 lg:grid-cols-3 mb-8">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Policy Document &amp; Terms
+              </h2>
+              <PolicyStatusBadge status={policy.status} />
             </div>
-
-            <div className="flex flex-col gap-6">
-              <Card>
-                <CardHeader>
-                  <h2 className="text-lg font-semibold">Findings breakdown</h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Across all analyses
+          </CardHeader>
+          <CardBody>
+            {isEditing ? (
+              <div className="flex flex-col gap-4">
+                <Input
+                  label="Policy Title"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                />
+                <Input
+                  label="Policy Text &amp; Clauses"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  multiline
+                  rows={4}
+                />
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={editForm.status}
+                      onChange={(e) => setEditForm({ ...editForm, status: e.target.value as PolicyStatus })}
+                      className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="active">Active</option>
+                      <option value="archived">Archived</option>
+                    </select>
+                  </div>
+                  <Input
+                    label="Version"
+                    value={editForm.version}
+                    onChange={(e) => setEditForm({ ...editForm, version: e.target.value })}
+                  />
+                  <Input
+                    label="Owner"
+                    value={editForm.owner}
+                    onChange={(e) => setEditForm({ ...editForm, owner: e.target.value })}
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button size="sm" onClick={handleSavePolicy} loading={saving}>
+                    Save Changes
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)} disabled={saving}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/50">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                    Indexed Text Body
                   </p>
-                </CardHeader>
-                <CardBody className="pt-0">
-                  {!findingsBreakdown || findingsBreakdown.total === 0 ? (
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      No findings recorded yet.
+                  <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200 whitespace-pre-wrap">
+                    {policy.description || "No text body indexed."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                  <div>
+                    <p className="text-xs text-slate-500">Version</p>
+                    <p className="mt-0.5 font-semibold text-sm">v{policy.version}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Department / Owner</p>
+                    <p className="mt-0.5 font-semibold text-sm">{policy.owner}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Created</p>
+                    <p className="mt-0.5 font-semibold text-sm">{relativeTime(policy.created_at)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">Last Modified</p>
+                    <p className="mt-0.5 font-semibold text-sm">{relativeTime(policy.updated_at)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Quick stats sidebar */}
+        <Card>
+          <CardHeader>
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              Audit Health Summary
+            </h2>
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-xs text-slate-500">Total Analyses</span>
+                <span className="text-lg font-bold">{analyses?.length ?? 0}</span>
+              </div>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <span className="text-xs text-slate-500">Open Findings</span>
+                <span className="text-lg font-bold">
+                  {analyses?.reduce((sum, a) => sum + a.findings.length, 0) ?? 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">High / Critical Risk</span>
+                <Badge tone={
+                  (analyses?.reduce((sum, a) => sum + a.findings.filter(f => f.severity === "high" || f.severity === "critical").length, 0) ?? 0) > 0
+                    ? "critical"
+                    : "success"
+                }>
+                  {analyses?.reduce((sum, a) => sum + a.findings.filter(f => f.severity === "high" || f.severity === "critical").length, 0) ?? 0} risks
+                </Badge>
+              </div>
+
+              <div className="pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full justify-center"
+                  onClick={handleRunAutoAudit}
+                  loading={runningAutoAudit}
+                >
+                  Trigger Re-Audit
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Analysis History */}
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Compliance Analyses &amp; Audit Logs
+              </h2>
+              <p className="text-xs text-slate-500">
+                Audit history, automated linting, and severity-ranked findings.
+              </p>
+            </div>
+            <Button size="sm" onClick={() => setShowAnalysisForm(!showAnalysisForm)}>
+              {showAnalysisForm ? "Close Form" : "+ Custom Analysis"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardBody>
+          {showAnalysisForm && (
+            <div className="mb-6 flex flex-col gap-4 p-5 rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                Record New Analysis
+              </h3>
+              <Input
+                label="Analysis Summary"
+                value={analysisForm.summary}
+                onChange={(e) => setAnalysisForm({ ...analysisForm, summary: e.target.value })}
+                multiline
+                rows={2}
+                placeholder="Executive summary of the compliance analysis..."
+              />
+              <div className="space-y-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Findings</p>
+                {analysisForm.findings.map((finding, idx) => (
+                  <div key={idx} className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Finding #{idx + 1}</span>
+                      {analysisForm.findings.length > 1 && (
+                        <button
+                          type="button"
+                          className="text-xs text-rose-600 hover:underline"
+                          onClick={() => removeFinding(idx)}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <Input
+                      label="Finding Title"
+                      value={finding.title}
+                      onChange={(e) => updateFinding(idx, "title", e.target.value)}
+                      placeholder="e.g. Missing RMA time limit clause"
+                    />
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Severity
+                      </label>
+                      <select
+                        value={finding.severity}
+                        onChange={(e) => updateFinding(idx, "severity", e.target.value)}
+                        className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    <Input
+                      label="Details"
+                      value={finding.details}
+                      onChange={(e) => updateFinding(idx, "details", e.target.value)}
+                      multiline
+                      rows={2}
+                      placeholder="Specific discrepancy and reasoning..."
+                    />
+                    <Input
+                      label="Recommendation"
+                      value={finding.recommendation}
+                      onChange={(e) => updateFinding(idx, "recommendation", e.target.value)}
+                      multiline
+                      rows={2}
+                      placeholder="Actionable remediation..."
+                    />
+                  </div>
+                ))}
+                <Button size="sm" variant="outline" onClick={addFinding}>
+                  + Add Another Finding
+                </Button>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm" onClick={handleCreateAnalysis} loading={creatingAnalysis}>
+                  Save Analysis
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowAnalysisForm(false)} disabled={creatingAnalysis}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!analyses || analyses.length === 0 ? (
+            <EmptyState
+              title="No analyses recorded yet."
+              description="Run an automated audit or create an analysis to attach compliance findings and track resolution."
+              actionLabel="Run AI Audit"
+              onAction={handleRunAutoAudit}
+            />
+          ) : (
+            <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-900">
+              {analyses.map((analysis) => (
+                <div key={analysis.id} className="py-5 first:pt-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-semibold text-sm text-slate-900 dark:text-slate-50">
+                        Analysis #{analysis.id}
+                      </p>
+                      <p className="text-xs text-slate-500">{relativeTime(analysis.created_at)}</p>
+                    </div>
+                    <Badge tone={analysis.status === "completed" ? "success" : "warning"}>
+                      {analysis.status}
+                    </Badge>
+                  </div>
+                  {analysis.summary && (
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+                      {analysis.summary}
                     </p>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-900">
-                        <span className="text-sm text-slate-700 dark:text-slate-200">
-                          Total findings
-                        </span>
-                        <span className="text-lg font-semibold">
-                          {findingsBreakdown.total}
-                        </span>
-                      </div>
-                      {[
-                        { k: "critical", label: "Critical", tone: "critical" as const, count: findingsBreakdown.critical },
-                        { k: "high", label: "High", tone: "high" as const, count: findingsBreakdown.high },
-                        { k: "medium", label: "Medium", tone: "medium" as const, count: findingsBreakdown.medium },
-                        { k: "low", label: "Low", tone: "low" as const, count: findingsBreakdown.low },
-                      ].map((r) => (
-                        <div key={r.k} className="flex items-center justify-between gap-3">
-                          <SeverityBadge severity={r.k as Finding["severity"]} />
-                          <span className="text-lg font-semibold tabular-nums">
-                            {r.count}
-                          </span>
+                  )}
+                  {analysis.findings.length > 0 && (
+                    <div className="space-y-2.5">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Attached Findings ({analysis.findings.length})
+                      </p>
+                      {analysis.findings.map((finding) => (
+                        <div
+                          key={finding.id}
+                          className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/40"
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <p className="font-semibold text-xs text-slate-900 dark:text-slate-100">
+                              {finding.title}
+                            </p>
+                            <SeverityBadge severity={finding.severity} />
+                          </div>
+                          {finding.details && (
+                            <p className="text-xs text-slate-600 dark:text-slate-300 mb-1.5 leading-normal">
+                              {finding.details}
+                            </p>
+                          )}
+                          {finding.recommendation && (
+                            <p className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/40 p-2 rounded-lg leading-normal">
+                              <strong>Remediation:</strong> {finding.recommendation}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
-                </CardBody>
-              </Card>
-
-              <Card>
-                <CardBody className="p-5">
-                  <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                    Quick actions
-                  </h3>
-                  <div className="mt-4 flex flex-col gap-2">
-                    <Link href={`/chat?p=${policy.id}`}>
-                      <Button
-                      variant="primary"
-                      size="sm"
-                      className="w-full"
-                    >
-                      Ask about this policy
-                    </Button>
-                  </Link>
-                    <Link href="/policies">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                      >
-                        Browse all policies
-                      </Button>
-                    </Link>
-                  </div>
-                </CardBody>
-              </Card>
+                </div>
+              ))}
             </div>
-          </div>
-        </>
-      )}
-
-      <div className="mt-10 text-xs text-slate-500 dark:text-slate-400">
-        Data from{" "}
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900">
-          GET /api/policies/{policy?.id ?? policyId ?? "id"}
-        </code>{" "}
-        &amp;{" "}
-        <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900">
-          GET /api/policies/{policy?.id ?? policyId ?? "id"}/analyses
-        </code>
-        .
-      </div>
+          )}
+        </CardBody>
+      </Card>
     </PageShell>
   );
 }

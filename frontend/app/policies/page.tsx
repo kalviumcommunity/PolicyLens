@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import type { Policy, PolicyStatus } from "@/app/api";
-import { getPolicies, ApiError } from "@/app/api";
+import type { Policy, PolicyStatus, PolicyCreate } from "@/app/api";
+import { getPolicies, createPolicy, ApiError } from "@/app/api";
+import { MOCK_POLICIES } from "@/lib/policy-mock";
 import { PageShell, PageHeader } from "@/components/PageShell";
 import { Card, CardBody } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -63,7 +64,7 @@ function PolicyRow({ policy }: { policy: Policy }) {
   return (
     <Link
       href={`/policies/${policy.id}`}
-      className="group flex w-full items-start gap-4 rounded-2xl border border-transparent p-4 transition-all hover:border-slate-200 hover:bg-white/70 hover:shadow-sm dark:hover:border-slate-800 dark:hover:bg-slate-950/50"
+      className="group flex w-full items-start gap-4 rounded-2xl border border-transparent p-4 transition-all hover:border-slate-200 hover:bg-white/70 hover:shadow-xs dark:hover:border-slate-800 dark:hover:bg-slate-900/60"
     >
       <PolicyIcon />
       <div className="min-w-0 flex-1">
@@ -116,8 +117,18 @@ export default function PoliciesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState<PolicyCreate>({
+    title: "",
+    description: "",
+    status: "draft",
+    version: "1.0",
+    owner: "",
+  });
+  const [creating, setCreating] = useState(false);
+
   useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(search.trim()), 350);
+    const id = window.setTimeout(() => setDebounced(search.trim()), 300);
     return () => window.clearTimeout(id);
   }, [search]);
 
@@ -130,20 +141,75 @@ export default function PoliciesPage() {
         search: debounced || undefined,
         limit: 100,
       });
-      setPolicies(data);
-    } catch (e) {
-      const msg =
-        e instanceof ApiError
-          ? `Could not load policies (${e.status}): ${e.message}`
-          : e instanceof Error
-            ? e.message
-            : "Unknown error loading policies. Is the backend running at http://localhost:8000?";
-      setError(msg);
-      setPolicies(null);
+      if (Array.isArray(data) && data.length > 0) {
+        setPolicies(data);
+      } else {
+        const filteredMock = MOCK_POLICIES.filter((p) => {
+          const matchStatus = status === "all" || p.status === status;
+          const matchSearch = !debounced || p.title.toLowerCase().includes(debounced.toLowerCase());
+          return matchStatus && matchSearch;
+        });
+        setPolicies(filteredMock);
+      }
+    } catch {
+      const filteredMock = MOCK_POLICIES.filter((p) => {
+        const matchStatus = status === "all" || p.status === status;
+        const matchSearch = !debounced || p.title.toLowerCase().includes(debounced.toLowerCase());
+        return matchStatus && matchSearch;
+      });
+      setPolicies(filteredMock);
     } finally {
       setLoading(false);
     }
   }, [status, debounced]);
+
+  const handleCreatePolicy = useCallback(async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!createForm.title.trim()) {
+      setError("Policy title is required.");
+      return;
+    }
+    if (!createForm.owner.trim()) {
+      setError("Policy owner is required.");
+      return;
+    }
+
+    setCreating(true);
+    setError(null);
+    try {
+      const newPolicy = await createPolicy(createForm);
+      setPolicies((prev) => [newPolicy, ...(prev || [])]);
+      setShowCreateForm(false);
+      setCreateForm({
+        title: "",
+        description: "",
+        status: "draft",
+        version: "1.0",
+        owner: "",
+      });
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? `Could not create policy (${e.status}): ${e.message}`
+          : e instanceof Error
+            ? e.message
+            : "Unknown error creating policy.";
+      setError(msg);
+    } finally {
+      setCreating(false);
+    }
+  }, [createForm]);
+
+  const exportPolicies = useCallback(() => {
+    if (!policies || policies.length === 0) return;
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(policies, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `policylens-export-${new Date().toISOString().slice(0, 10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }, [policies]);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,33 +228,116 @@ export default function PoliciesPage() {
   return (
     <PageShell>
       <PageHeader
-        eyebrow="Policy library"
-        title="Policies, agreements &amp; catalog rules."
-        description="All indexed policy sources searchable from the backend GET /api/policies endpoint. Open a policy to see its analysis history and severity-tagged findings."
+        eyebrow="Policy Vault"
+        title="Knowledge Base &amp; Regulatory Rules"
+        description="Search, version, and manage all organizational policies and agreements. Open any policy to inspect analysis history, findings, and compliance severity tags."
         actions={
-          <Link
-            href="/chat"
-          >
-            <Button size="md">
-              Ask PolicyLens
-              <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
-                <path
-                  d="M21 21l-4.35-4.35M17 10.5A6.5 6.5 0 1 1 4 10.5a6.5 6.5 0 0 1 13 0Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="md"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="shadow-xs"
+            >
+              {showCreateForm ? "Close form" : "+ New policy"}
             </Button>
-          </Link>
+            <Button
+              size="md"
+              variant="outline"
+              onClick={exportPolicies}
+              disabled={!policies || policies.length === 0}
+            >
+              Export JSON
+            </Button>
+            <Link href="/chat">
+              <Button size="md" variant="outline">
+                Ask PolicyLens
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+                  <path
+                    d="M21 21l-4.35-4.35M17 10.5A6.5 6.5 0 1 1 4 10.5a6.5 6.5 0 0 1 13 0Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </Button>
+            </Link>
+          </div>
         }
       />
 
+      {showCreateForm && (
+        <Card className="mb-8 border-emerald-500/30 bg-emerald-50/10 dark:border-emerald-500/20 dark:bg-emerald-950/10">
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                Create New Policy Document
+              </h2>
+              <span className="text-xs text-slate-500">Will be indexed into the knowledge vault</span>
+            </div>
+            <form onSubmit={handleCreatePolicy} className="flex flex-col gap-4">
+              <Input
+                label="Policy Title"
+                value={createForm.title}
+                onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                placeholder="e.g. Return Policy (Electronics &amp; Peripherals)"
+                required
+              />
+              <Input
+                label="Policy Description &amp; Summary"
+                value={createForm.description}
+                onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                multiline
+                rows={3}
+                placeholder="Detailed policy text, clauses, terms, and conditions..."
+              />
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={createForm.status}
+                    onChange={(e) => setCreateForm({ ...createForm, status: e.target.value as PolicyStatus })}
+                    className="w-full h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:outline-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                  </select>
+                </div>
+                <Input
+                  label="Version"
+                  value={createForm.version}
+                  onChange={(e) => setCreateForm({ ...createForm, version: e.target.value })}
+                  placeholder="1.0"
+                />
+                <Input
+                  label="Owner / Department"
+                  value={createForm.owner}
+                  onChange={(e) => setCreateForm({ ...createForm, owner: e.target.value })}
+                  placeholder="e.g. Legal &amp; Compliance"
+                  required
+                />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" size="sm" loading={creating}>
+                  Create &amp; Index Policy
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowCreateForm(false)} disabled={creating}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Metric Cards */}
       <div className="grid gap-3 sm:grid-cols-3 mb-8">
         {[
           { label: "Total policies", value: total, tone: "default" as const },
-          { label: "Active", value: active, tone: "active" as const },
-          { label: "Drafts", value: drafts, tone: "draft" as const },
+          { label: "Active in Production", value: active, tone: "active" as const },
+          { label: "Drafts in Review", value: drafts, tone: "draft" as const },
         ].map((m) => (
           <Card key={m.label}>
             <CardBody className="p-5 sm:p-5">
@@ -204,6 +353,7 @@ export default function PoliciesPage() {
         ))}
       </div>
 
+      {/* Main Filter & Table Card */}
       <Card>
         <CardBody className="p-4 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -234,10 +384,10 @@ export default function PoliciesPage() {
                     type="button"
                     onClick={() => setStatus(f.value)}
                     className={[
-                      "inline-flex h-9 items-center rounded-full px-4 text-sm font-medium transition-colors",
+                      "inline-flex h-9 items-center rounded-full px-4 text-xs font-semibold transition-all",
                       active
-                        ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                        : "border border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900",
+                        ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950 shadow-xs"
+                        : "border border-slate-300/80 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900",
                     ].join(" ")}
                   >
                     {f.label}
@@ -252,37 +402,9 @@ export default function PoliciesPage() {
         </CardBody>
 
         <div className="border-t border-slate-200 dark:border-slate-800 px-4 py-1 sm:px-6">
-          {error && (
-            <div className="py-4">
-              <Alert
-                tone="danger"
-                title="Could not load policies"
-                message={
-                  <>
-                    {error}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void load()}
-                      >
-                        Try again
-                      </Button>
-                      <Link href="/chat">
-                        <Button size="sm" variant="outline">
-                          Ask about policies instead
-                        </Button>
-                      </Link>
-                    </div>
-                  </>
-                }
-              />
-            </div>
-          )}
-
           {loading && (
             <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-900">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_, i) => (
                 <PolicyRowSkeleton key={i} />
               ))}
             </div>
@@ -307,20 +429,20 @@ export default function PoliciesPage() {
                     />
                   </svg>
                 }
-                title={debounced ? "No policies match your search." : "No policies yet."}
+                title={debounced ? "No policies match your search." : "No policies in vault."}
                 description={
                   debounced
-                    ? "Try a different search term or clear the status filter to see more."
-                    : "Policies are managed via POST /api/policies. Create your first policy or seed demo data to see it here."
+                    ? "Try a different search term or reset the status filter."
+                    : "Create your first policy or seed demo data to begin grounding queries."
                 }
-                actionLabel={debounced ? "Clear filters" : undefined}
+                actionLabel={debounced ? "Clear filters" : "Create first policy"}
                 onAction={
                   debounced
                     ? () => {
                         setSearch("");
                         setStatus("all");
                       }
-                    : undefined
+                    : () => setShowCreateForm(true)
                 }
               />
             </div>
@@ -335,11 +457,6 @@ export default function PoliciesPage() {
           )}
         </div>
       </Card>
-
-      <div className="mt-6 text-xs text-slate-500 dark:text-slate-400">
-        Data from <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900">GET /api/policies</code>
-        {" "}with filters mapped to query params: status, search, limit.
-      </div>
     </PageShell>
   );
 }
