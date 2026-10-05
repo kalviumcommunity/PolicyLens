@@ -6,10 +6,12 @@ type BaseProps = {
   error?: string;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
+  multiline?: boolean;
+  rows?: number;
 };
 
-type InputProps = InputHTMLAttributes<HTMLInputElement> & BaseProps;
-type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & BaseProps;
+type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'multiline' | 'rows'> & BaseProps;
+type TextareaProps = Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'multiline' | 'rows'> & BaseProps;
 
 export function Input({
   label,
@@ -19,6 +21,8 @@ export function Input({
   trailingIcon,
   className = "",
   id,
+  multiline = false,
+  rows = 3,
   ...rest
 }: InputProps) {
   const inputId = id ?? rest.name;
@@ -33,28 +37,46 @@ export function Input({
         </label>
       )}
       <div className="relative">
-        {leadingIcon && (
+        {leadingIcon && !multiline && (
           <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400">
             {leadingIcon}
           </div>
         )}
-        <input
-          id={inputId}
-          className={[
-            "w-full h-11 rounded-2xl border border-slate-200 bg-white/90 px-4 text-sm text-slate-900",
-            "placeholder:text-slate-400 outline-none transition-colors",
-            "focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30",
-            "dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500",
-            leadingIcon ? "pl-10" : "",
-            trailingIcon ? "pr-10" : "",
-            error
-              ? "border-rose-300 focus:border-rose-400 focus:ring-rose-400/30 dark:border-rose-700"
-              : "",
-            className,
-          ].join(" ")}
-          {...rest}
-        />
-        {trailingIcon && (
+        {multiline ? (
+          <textarea
+            id={inputId}
+            rows={rows}
+            className={[
+              "w-full min-h-[96px] resize-y rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-900",
+              "placeholder:text-slate-400 outline-none transition-colors",
+              "focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30",
+              "dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500",
+              error
+                ? "border-rose-300 focus:border-rose-400 focus:ring-rose-400/30 dark:border-rose-700"
+                : "",
+              className,
+            ].join(" ")}
+            {...(rest as TextareaHTMLAttributes<HTMLTextAreaElement>)}
+          />
+        ) : (
+          <input
+            id={inputId}
+            className={[
+              "w-full h-11 rounded-2xl border border-slate-200 bg-white/90 px-4 text-sm text-slate-900",
+              "placeholder:text-slate-400 outline-none transition-colors",
+              "focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30",
+              "dark:border-slate-700 dark:bg-slate-950/70 dark:text-slate-100 dark:placeholder:text-slate-500",
+              leadingIcon ? "pl-10" : "",
+              trailingIcon ? "pr-10" : "",
+              error
+                ? "border-rose-300 focus:border-rose-400 focus:ring-rose-400/30 dark:border-rose-700"
+                : "",
+              className,
+            ].join(" ")}
+            {...rest}
+          />
+        )}
+        {trailingIcon && !multiline && (
           <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400">
             {trailingIcon}
           </div>
